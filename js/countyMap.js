@@ -38,7 +38,7 @@ var width = 580,
   noDataColor = '#ddd', //Color applied when no data matches an element
   lowBaseColor = '#d73027', //Color applied at the end of the scale with the lowest values
   midBaseColor = '#ffffbf';
-  highBaseColor = '#4575b4';
+  highBaseColor = '#3664b5';
 
 var sequentialDomain = [0, steps - 1];
 var divergentDomain = [0, (steps - 1)/2, steps - 1];
