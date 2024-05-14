@@ -8,11 +8,11 @@ var width = 580,
   dataFormat = {
     percentage: d3.format('%'),
     percentageWithDecimals: d3.format(',.1%'),
-    dollars: d3.format('$,'),
-    dollarsAndCents: d3.format('$,.2f'),
-    tens: d3.format('$,.4r'),
-    hundreds: d3.format('$,.5r'),
-    thousands: d3.format('$s'),
+    dollars: d3.format(','),
+    dollarsAndCents: d3.format(',.2f'),
+    tens: d3.format(',.4r'),
+    hundreds: d3.format(',.5r'),
+    thousands: d3.format('s'),
   },
 
 // Data variables
@@ -28,8 +28,8 @@ var width = 580,
   divergent = true,
 
 // Define increments for data scale
-  min = 75, //Floor for the first step
-  max = 125, //Anything above the max is the final step
+  min = 10, //Floor for the first step
+  max = 3000, //Anything above the max is the final step
   steps = 11, //Final step represents anything at or above max
   increment = (max - min) / (steps - 1),
 
