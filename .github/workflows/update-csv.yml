@@ -64,7 +64,7 @@ jobs:
 
     - name: Exit if no relevant item found or if title already updated
       run: | 
-        year="${{ steps.check_rss.outputs.year }}""
+        year="${{ steps.check_rss.outputs.year }}"
         month_name="${{ steps.check_rss.outputs.month_name }}"
         current_title="${month_name} ${year} CMS Report of MAPD Enrollees by County"
         h1_tag=$(grep -oP '(?<=<h1 style="text-align: center;font-family: Montserrat, sans-serif; font-weight: 600; color: #40b4af;">).*?(?=</h1>)' index.html)
