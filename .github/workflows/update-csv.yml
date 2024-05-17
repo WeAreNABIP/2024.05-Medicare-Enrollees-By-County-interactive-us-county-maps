@@ -116,6 +116,7 @@ jobs:
         # Set output for CSV path
         print(f'::set-output name=csv_path::{csv_path}')
         "
+      continue-on-error: false
 
     - name: Process CSV
       run: |
@@ -143,6 +144,7 @@ jobs:
         processed_csv_path = './data/rpp-2018-county.csv'
         processed_df.to_csv(processed_csv_path, index=False)
         "
+      continue-on-error: false
 
     - name: Update HTML
       run: |
@@ -164,6 +166,7 @@ jobs:
         with open('./index.html', 'w') as file:
             file.write(updated_html)
         "
+      continue-on-error: false
 
     - name: Commit and push changes
       uses: stefanzweifel/git-auto-commit-action@v4
