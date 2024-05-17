@@ -1,5 +1,8 @@
 name: Update County Map Data
 
+# author: Joshua Brooker
+# description: updates the CSV data generating the map based on if a government RSS feed indicates that new data is available
+
 on:
   schedule:
     - cron: '0 0 * * *' # Runs every day at midnight UTC
@@ -16,7 +19,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.x'
+        python-version: '4.x'
 
     - name: Install dependencies
       run: |
