@@ -11,10 +11,10 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: '3.x'
 
@@ -60,6 +60,7 @@ jobs:
       run: exit 0
 
     - name: Download and extract CSV
+      id: download_and_extract_csv
       run: |
         import os
         import requests
@@ -110,6 +111,8 @@ jobs:
 
     - name: Update HTML
       run: |
+        import re
+
         year = '${{ steps.check_rss.outputs.year }}'
         month_name = '${{ steps.check_rss.outputs.month_name }}'
 
@@ -126,13 +129,9 @@ jobs:
             file.write(updated_html)
 
     - name: Commit and push changes
-      uses: actions/github-script@v3
+      uses: stefanzweifel/git-auto-commit-action@v4
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        script: |
-          const { exec } = require('child_process');
-
-          exec('git config --global user.name "github-actions[bot]" && git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"');
-          exec('git add .');
-          exec('git commit -m "Update data and HTML for ${{ steps.check_rss.outputs.month_name }} ${{ steps.check_rss.outputs.year }}"');
-          exec('git push');
+        commit_message: "Update data and HTML for ${{ steps.check_rss.outputs.month_name }} ${{ steps.check_rss.outputs.year }}"
+        branch: main
+        commit_user_name: github-actions[bot]
+        commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com
