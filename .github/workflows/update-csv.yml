@@ -1,7 +1,8 @@
-name: Update County Map Data
-
+# name: Update County Map Data
 # author: Joshua Brooker
-# description: updates the CSV data generating the map based on if a government RSS feed indicates that new data is available
+# description: Updates the CSV data generating the map based on if a government RSS feed indicates that new data is available
+
+name: Update County Map Data
 
 on:
   schedule:
@@ -29,34 +30,37 @@ jobs:
     - name: Check RSS feed
       id: check_rss
       run: |
-        import requests
-        import feedparser
-        from datetime import datetime
+        python -c "
+import requests
+import feedparser
+from datetime import datetime
 
-        # Define the RSS URL and the date format
-        rss_url = "https://www.cms.gov/rss/31926"
-        date_format = "%Y %m"
+# Define the RSS URL and the date format
+rss_url = 'https://www.cms.gov/rss/31926'
+date_format = '%Y %m'
 
-        # Get current date details
-        now = datetime.utcnow()
-        current_year = now.strftime("%Y")
-        current_month = now.strftime("%m")
-        current_month_name = now.strftime("%B")
+# Get current date details
+now = datetime.utcnow()
+current_year = now.strftime('%Y')
+current_month = now.strftime('%m')
+current_month_name = now.strftime('%B')
 
-        # Parse the RSS feed
-        feed = feedparser.parse(rss_url)
+# Parse the RSS feed
+feed = feedparser.parse(rss_url)
 
-        # Search for the relevant title
-        target_title = f"MA Enrollment by SCC {current_year} {current_month}"
-        item_found = any(entry['title'] == target_title for entry in feed.entries)
+# Search for the relevant title
+target_title = f'MA Enrollment by SCC {current_year} {current_month}'
+item_found = any(entry['title'] == target_title for entry in feed.entries)
 
-        # Set output variable
-        print(f"::set-output name=item_found::{item_found}")
+# Set output variable
+print(f'::set-output name=item_found::{item_found}')
 
-        # Set outputs for the year, month, and month name
-        print(f"::set-output name=year::{current_year}")
-        print(f"::set-output name=month::{current_month}")
-        print(f"::set-output name=month_name::{current_month_name}")
+# Set outputs for the year, month, and month name
+print(f'::set-output name=year::{current_year}')
+print(f'::set-output name=month::{current_month}')
+print(f'::set-output name=month_name::{current_month_name}')
+        "
+      continue-on-error: false
 
     - name: Exit if no relevant item found
       if: steps.check_rss.outputs.item_found == 'false'
@@ -65,71 +69,80 @@ jobs:
     - name: Download and extract CSV
       id: download_and_extract_csv
       run: |
-        import os
-        import requests
-        from zipfile import ZipFile
+        python -c "
+import os
+import requests
+from zipfile import ZipFile
 
-        year = '${{ steps.check_rss.outputs.year }}'
-        month = '${{ steps.check_rss.outputs.month }}'
-        url = f"https://www.cms.gov/files/zip/ma-enrollment-state/county/contract-{month}-{year}-full-version.zip"
-        zip_path = "/tmp/data.zip"
-        extract_path = "/tmp/extracted"
+year = '${{ steps.check_rss.outputs.year }}'
+month = '${{ steps.check_rss.outputs.month }}'
+url = f'https://www.cms.gov/files/zip/ma-enrollment-state/county/contract-{month}-{year}-full-version.zip'
+zip_path = '/tmp/data.zip'
+extract_path = '/tmp/extracted'
 
-        # Download the zip file
-        response = requests.get(url)
-        with open(zip_path, "wb") as f:
-            f.write(response.content)
+# Download the zip file
+response = requests.get(url)
+with open(zip_path, 'wb') as f:
+    f.write(response.content)
 
-        # Extract the zip file
-        with ZipFile(zip_path, 'r') as zip_ref:
-            zip_ref.extractall(extract_path)
+# Extract the zip file
+with ZipFile(zip_path, 'r') as zip_ref:
+    zip_ref.extractall(extract_path)
 
-        # Find the CSV file
-        csv_filename = f"SCC_Enrollment_MA_{year}_{month}/SCC_Enrollment_MA_{year}_{month}.csv"
-        csv_path = os.path.join(extract_path, csv_filename)
+# Find the CSV file
+csv_filename = f'SCC_Enrollment_MA_{year}_{month}/SCC_Enrollment_MA_{year}_{month}.csv'
+csv_path = os.path.join(extract_path, csv_filename)
 
-        # Set output for CSV path
-        print(f"::set-output name=csv_path::{csv_path}")
+# Set output for CSV path
+print(f'::set-output name=csv_path::{csv_path}')
+        "
+      continue-on-error: false
 
     - name: Process CSV
       run: |
-        import pandas as pd
+        python -c "
+import pandas as pd
 
-        csv_path = '${{ steps.download_and_extract_csv.outputs.csv_path }}'
+csv_path = '${{ steps.download_and_extract_csv.outputs.csv_path }}'
 
-        # Read the CSV file
-        df = pd.read_csv(csv_path)
+# Read the CSV file
+df = pd.read_csv(csv_path)
 
-        # Process the data
-        processed_df = df.groupby('{FIPS Code}', as_index=False).agg(
-            county=('{FIPS Code}', 'first'),
-            state=('State', 'first'),
-            name=(lambda x: f"{x['County']}, {x['State']}"),
-            value=('Enrolled', 'sum')
-        )
+# Process the data
+processed_df = df.groupby('{FIPS Code}', as_index=False).agg(
+    county=('{FIPS Code}', 'first'),
+    state=('State', 'first'),
+    name=(lambda x: f'{x['County']}, {x['State']}'),
+    value=('Enrolled', 'sum')
+)
 
-        # Save the processed CSV
-        processed_csv_path = './data/rpp-2018-county.csv'
-        processed_df.to_csv(processed_csv_path, index=False)
+# Save the processed CSV
+processed_csv_path = './data/rpp-2018-county.csv'
+processed_df.to_csv(processed_csv_path, index=False)
+        "
+      continue-on-error: false
 
     - name: Update HTML
       run: |
-        import re
+        python -c "
+import re
 
-        year = '${{ steps.check_rss.outputs.year }}'
-        month_name = '${{ steps.check_rss.outputs.month_name }}'
+year = '${{ steps.check_rss.outputs.year }}'
+month_name = '${{ steps.check_rss.outputs.month_name }}'
 
-        # Read the HTML file
-        with open('./index.html', 'r') as file:
-            html = file.read()
+# Read the HTML file
+with open('./index.html', 'r') as file:
+    html = file.read()
 
-        # Update the title
-        new_title = f"<h1 style=\"text-align: center;font-family: Montserrat, sans-serif; font-weight: 600; color: #40b4af;\">{month_name} {year} CMS Report of MAPD Enrollees by County</h1>"
-        updated_html = re.sub(r"<h1 style=\"text-align: center;font-family: Montserrat, sans-serif; font-weight: 600; color: #40b4af;\">.*</h1>", new_title, html)
+# Update the title
+new_title = f'<h1 style=\"text-align: center;font-family: Montserrat, sans-serif; font-weight: 600; color: #40b4af;\">{month_name} {year} CMS Report of MAPD Enrollees by County</h1>'
+updated_html = re.sub(r'<h1 style=\"text-align: center;font-family: Montserrat, sans-serif; font-weight: 600; color: #40b4af;\">.*</h1>', new_title, html)
 
-        # Write the updated HTML back to the file
-        with open('./index.html', 'w') as file:
-            file.write(updated_html)
+# Write the updated HTML back to the file
+with open('./index.html', 'w') as file:
+    file.write(updated_html)
+        "
+      continue-on-error: false
 
     - name: Commit and push changes
       uses: stefanzweifel/git-auto-commit-action@v4
@@ -138,3 +151,4 @@ jobs:
         branch: main
         commit_user_name: github-actions[bot]
         commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com
+      continue-on-error: false
