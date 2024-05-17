@@ -26,6 +26,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install requests pandas feedparser
+      continue-on-error: false
 
     - name: Check RSS feed
       id: check_rss
