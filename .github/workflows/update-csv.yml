@@ -62,16 +62,24 @@ jobs:
         print(f'::set-output name=month_name::{current_month_name}')
         "
 
-    - name: Exit if no relevant item found or if title already updated
-      run: | 
+    - name: Check if title already updated
+      id: check_title
+      run: |
         year="${{ steps.check_rss.outputs.year }}"
         month_name="${{ steps.check_rss.outputs.month_name }}"
         current_title="${month_name} ${year} CMS Report of MAPD Enrollees by County"
         h1_tag=$(grep -oP '(?<=<h1 style="text-align: center;font-family: Montserrat, sans-serif; font-weight: 600; color: #40b4af;">).*?(?=</h1>)' index.html)
-        if [[ "${{ steps.check_rss.outputs.item_found }}" == "false" || "$h1_tag" == "$current_title" ]]; then
-          echo "Exiting: No relevant RSS feed item found or title already updated."
-          exit 0
+        if [[ "$h1_tag" == "$current_title" ]]; then
+          echo "title_already_updated=true" >> $GITHUB_ENV
+        else
+          echo "title_already_updated=false" >> $GITHUB_ENV
         fi
+
+    - name: Exit if no relevant item found or if title already updated
+      if: ${{ steps.check_rss.outputs.item_found == 'false' || env.title_already_updated == 'true' }}
+      run: |
+        echo "Exiting: No relevant RSS feed item found or title already updated."
+        exit 0
 
     - name: Download and extract CSV
       id: download_and_extract_csv
