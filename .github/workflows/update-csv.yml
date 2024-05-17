@@ -75,7 +75,7 @@ jobs:
         from zipfile import ZipFile
 
         year = '${{ steps.check_rss.outputs.year }}'
-        month = '${{ steps.check_rss.outputs.month }}'
+        month = '${{ steps.check_rss.outputs.month_name }}'
         print(f'Download and extract values = {year} - {month}')
 
         url = f'https://www.cms.gov/files/zip/ma-enrollment-state/county/contract-{month}-{year}-full-version.zip'
