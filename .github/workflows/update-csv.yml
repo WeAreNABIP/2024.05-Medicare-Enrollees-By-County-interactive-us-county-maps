@@ -113,7 +113,7 @@ jobs:
 
         # Ensure correct data types
         df['FIPS Code'] = df['FIPS Code'].astype(int)
-        df['Enrolled'] = df['Enrolled'].replace('.', 0).astype(int)
+        df['Enrolled'] = df['Enrolled'].replace('.', 0).fillna(0).astype(int)
 
         # Process the data
         processed_df = df.groupby('{FIPS Code}', as_index=False).agg(
