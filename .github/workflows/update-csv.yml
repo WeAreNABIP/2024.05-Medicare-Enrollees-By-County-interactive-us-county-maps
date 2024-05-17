@@ -66,9 +66,10 @@ jobs:
       run: | 
         year = '${{ steps.check_rss.outputs.year }}'
         month_name = '${{ steps.check_rss.outputs.month_name }}'
-        current_title = f'{month_name} {year} CMS Report of MAPD Enrollees by County'
+        current_title = '${month_name} ${year} CMS Report of MAPD Enrollees by County'
         h1_tag=$(grep -oP '(?<=<h1 style="text-align: center;font-family: Montserrat, sans-serif; font-weight: 600; color: #40b4af;">).*?(?=</h1>)' index.html)
         if [[ "${{ steps.check_rss.outputs.item_found }}" == "false" || "$h1_tag" == "$current_title" ]]; then
+          echo "Exiting: No relevant RSS feed item found or title already updated."
           exit 0
         fi
 
