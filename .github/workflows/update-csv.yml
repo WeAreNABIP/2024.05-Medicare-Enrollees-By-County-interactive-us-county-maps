@@ -175,3 +175,4 @@ jobs:
         branch: main
         commit_user_name: github-actions[bot]
         commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com
+      continue-on-error: false
