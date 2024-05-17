@@ -1,0 +1,138 @@
+name: Update County Map Data
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Runs every day at midnight UTC
+  workflow_dispatch: # Allows manual triggering of the workflow
+
+jobs:
+  update-csv:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests pandas feedparser
+
+    - name: Check RSS feed
+      id: check_rss
+      run: |
+        import requests
+        import feedparser
+        from datetime import datetime
+
+        # Define the RSS URL and the date format
+        rss_url = "https://www.cms.gov/rss/31926"
+        date_format = "%Y %m"
+
+        # Get current date details
+        now = datetime.utcnow()
+        current_year = now.strftime("%Y")
+        current_month = now.strftime("%m")
+        current_month_name = now.strftime("%B")
+
+        # Parse the RSS feed
+        feed = feedparser.parse(rss_url)
+
+        # Search for the relevant title
+        target_title = f"MA Enrollment by SCC {current_year} {current_month}"
+        item_found = any(entry['title'] == target_title for entry in feed.entries)
+
+        # Set output variable
+        print(f"::set-output name=item_found::{item_found}")
+
+        # Set outputs for the year, month, and month name
+        print(f"::set-output name=year::{current_year}")
+        print(f"::set-output name=month::{current_month}")
+        print(f"::set-output name=month_name::{current_month_name}")
+
+    - name: Exit if no relevant item found
+      if: steps.check_rss.outputs.item_found == 'false'
+      run: exit 0
+
+    - name: Download and extract CSV
+      run: |
+        import os
+        import requests
+        from zipfile import ZipFile
+
+        year = '${{ steps.check_rss.outputs.year }}'
+        month = '${{ steps.check_rss.outputs.month }}'
+        url = f"https://www.cms.gov/files/zip/ma-enrollment-state/county/contract-{month}-{year}-full-version.zip"
+        zip_path = "/tmp/data.zip"
+        extract_path = "/tmp/extracted"
+
+        # Download the zip file
+        response = requests.get(url)
+        with open(zip_path, "wb") as f:
+            f.write(response.content)
+
+        # Extract the zip file
+        with ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(extract_path)
+
+        # Find the CSV file
+        csv_filename = f"SCC_Enrollment_MA_{year}_{month}/SCC_Enrollment_MA_{year}_{month}.csv"
+        csv_path = os.path.join(extract_path, csv_filename)
+
+        # Set output for CSV path
+        print(f"::set-output name=csv_path::{csv_path}")
+
+    - name: Process CSV
+      run: |
+        import pandas as pd
+
+        csv_path = '${{ steps.download_and_extract_csv.outputs.csv_path }}'
+
+        # Read the CSV file
+        df = pd.read_csv(csv_path)
+
+        # Process the data
+        processed_df = df.groupby('{FIPS Code}', as_index=False).agg(
+            county=('{FIPS Code}', 'first'),
+            state=('State', 'first'),
+            name=(lambda x: f"{x['County']}, {x['State']}"),
+            value=('Enrolled', 'sum')
+        )
+
+        # Save the processed CSV
+        processed_csv_path = './data/rpp-2018-county.csv'
+        processed_df.to_csv(processed_csv_path, index=False)
+
+    - name: Update HTML
+      run: |
+        year = '${{ steps.check_rss.outputs.year }}'
+        month_name = '${{ steps.check_rss.outputs.month_name }}'
+
+        # Read the HTML file
+        with open('./index.html', 'r') as file:
+            html = file.read()
+
+        # Update the title
+        new_title = f"<h1 style=\"text-align: center;font-family: Montserrat, sans-serif; font-weight: 600; color: #40b4af;\">{month_name} {year} CMS Report of MAPD Enrollees by County</h1>"
+        updated_html = re.sub(r"<h1 style=\"text-align: center;font-family: Montserrat, sans-serif; font-weight: 600; color: #40b4af;\">.*</h1>", new_title, html)
+
+        # Write the updated HTML back to the file
+        with open('./index.html', 'w') as file:
+            file.write(updated_html)
+
+    - name: Commit and push changes
+      uses: actions/github-script@v3
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const { exec } = require('child_process');
+
+          exec('git config --global user.name "github-actions[bot]" && git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"');
+          exec('git add .');
+          exec('git commit -m "Update data and HTML for ${{ steps.check_rss.outputs.month_name }} ${{ steps.check_rss.outputs.year }}"');
+          exec('git push');
