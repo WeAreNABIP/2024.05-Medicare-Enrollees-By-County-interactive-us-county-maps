@@ -30,8 +30,7 @@ jobs:
     - name: Check RSS feed
       id: check_rss
       run: |
-        python -c 
-        "
+        python -c "
         import requests
         import feedparser
         from datetime import datetime
@@ -69,8 +68,7 @@ jobs:
     - name: Download and extract CSV
       id: download_and_extract_csv
       run: |
-        python -c
-        "
+        python -c "
         import os
         import requests
         from zipfile import ZipFile
@@ -101,8 +99,7 @@ jobs:
 
     - name: Process CSV
       run: |
-        python -c
-        "
+        python -c "
         import pandas as pd
 
         csv_path = '${{ steps.download_and_extract_csv.outputs.csv_path }}'
@@ -125,8 +122,7 @@ jobs:
 
     - name: Update HTML
       run: |
-        python -c
-        "
+        python -c "
         import re
 
         year = '${{ steps.check_rss.outputs.year }}'
@@ -144,7 +140,7 @@ jobs:
         with open('./index.html', 'w') as file:
             file.write(updated_html)
         "
-        
+
     - name: Commit and push changes
       uses: stefanzweifel/git-auto-commit-action@v4
       with:
