@@ -111,6 +111,10 @@ jobs:
         # Read the CSV file
         df = pd.read_csv(csv_path)
 
+        # Ensure correct data types
+        df['FIPS Code'] = df['FIPS Code'].astype(int)
+        df['Enrolled'] = df['Enrolled'].replace('.', 0).astype(int)
+
         # Process the data
         processed_df = df.groupby('{FIPS Code}', as_index=False).agg(
             county=('{FIPS Code}', 'first'),
